@@ -1,29 +1,32 @@
 <?php
 
-namespace app\routes;
+namespace App\Routes;
+
+use App\Services\View;
 
 class Router
 {
-    protected $routes = [];
-    protected $prefix = '';
+    protected array $routes = [];
+    protected string $prefix = '';
+    protected View $view;
 
-    public function __construct($prefix = '')
+    /**
+     * @param View $view Экземпляр класса View для отображения шаблонов
+     * @param string $prefix Префикс для маршрутов
+     */
+    public function __construct(View $view, string $prefix = '')
     {
-        $this->prefix = $prefix;
-    }
-
-    public function setPath($prefix)
-    {
+        $this->view = $view;
         $this->prefix = $prefix;
     }
 
     /**
      * Метод для обработки GET-запросов
      *
-     * @param string $url
-     * @param callable $func
+     * @param string $url Маршрут
+     * @param callable $func Функция-обработчик
      */
-    public function get($url, $func)
+    public function get(string $url, callable $func): void
     {
         $this->addRoute('GET', $this->prefix . $url, $func);
     }
@@ -31,10 +34,10 @@ class Router
     /**
      * Метод для обработки POST-запросов
      *
-     * @param string $url
-     * @param callable $func
+     * @param string $url Маршрут
+     * @param callable $func Функция-обработчик
      */
-    public function post($url, $func)
+    public function post(string $url, callable $func): void
     {
         $this->addRoute('POST', $this->prefix . $url, $func);
     }
@@ -42,10 +45,10 @@ class Router
     /**
      * Метод для обработки PUT-запросов
      *
-     * @param string $url
-     * @param callable $func
+     * @param string $url Маршрут
+     * @param callable $func Функция-обработчик
      */
-    public function put($url, $func)
+    public function put(string $url, callable $func): void
     {
         $this->addRoute('PUT', $this->prefix . $url, $func);
     }
@@ -53,10 +56,10 @@ class Router
     /**
      * Метод для обработки DELETE-запросов
      *
-     * @param string $url
-     * @param callable $func
+     * @param string $url Маршрут
+     * @param callable $func Функция-обработчик
      */
-    public function delete($url, $func)
+    public function delete(string $url, callable $func): void
     {
         $this->addRoute('DELETE', $this->prefix . $url, $func);
     }
@@ -64,11 +67,11 @@ class Router
     /**
      * Метод для добавления маршрута в роутер
      *
-     * @param string $method
-     * @param string $url
-     * @param callable $func
+     * @param string $method HTTP метод
+     * @param string $url Маршрут
+     * @param callable $func Функция-обработчик
      */
-    protected function addRoute($method, $url, $func)
+    protected function addRoute(string $method, string $url, callable $func): void
     {
         $pattern = str_replace('/', '\/', $url);
         $pattern = preg_replace('/<(\w+)>/', '(?P<$1>[^\/]+)', $pattern);
@@ -82,7 +85,7 @@ class Router
     /**
      * Метод для обработки входящих запросов
      */
-    public function resolve()
+    public function resolve(): void
     {
         $requestMethod = $_SERVER['REQUEST_METHOD'];
         $requestUri = $this->getCleanUri();
@@ -94,13 +97,14 @@ class Router
                 } else {
                     $inputData = $_POST;
                 }
-                return $route['func']($matches, $_GET, $inputData);
+
+                $route['func']($matches, $_GET, $inputData);
+                return;
             }
         }
 
         http_response_code(404);
-        echo json_encode(['error' => 'Route not found']);
-        exit();
+        $this->view->display('404');
     }
 
     /**
@@ -108,10 +112,9 @@ class Router
      *
      * @return string Чистый URI без GET-параметров
      */
-    protected function getCleanUri()
+    protected function getCleanUri(): string
     {
         $uri = $_SERVER['REQUEST_URI'];
-        $uri = parse_url($uri, PHP_URL_PATH);
-        return $uri;
+        return parse_url($uri, PHP_URL_PATH) ?: '/';
     }
 }
