@@ -1,20 +1,22 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+
+declare(strict_types=1);
+
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
-//preload
-require_once __DIR__ . '/../app/helpers/Env.php';
-\App\Helpers\Env::load();
-require_once __DIR__ . '/../app/services/Database.php';
-require_once __DIR__ . '/../app/services/View.php';
-require_once __DIR__ . '/../app/controllers/BaseController.php';
+use App\Routes\Router;
+use App\Services\View;
+use App\Helpers\Env;
 
-//controllers
+Env::load(__DIR__ . '/../../.env');
 
-//router
-require_once __DIR__ . '/../app/routes/Router.php';
-require_once __DIR__ . '/../app/routes/web.php';
+$view = new View();
+$router = new Router($view);
 
+require_once __DIR__ . '/../App/routes/web.php';
+
+$router->resolve();
