@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: movieAdmin-web
+    platform: linux/amd64
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html/src
+      - ./php.ini:/usr/local/etc/php/php.ini
+      - ./db:/db
+      - ./vendor:/var/www/html/vendor
+      - ./composer.json:/var/www/html/composer.json
+      - ./composer.lock:/var/www/html/composer.lock
+    environment:
+      APACHE_DOCUMENT_ROOT: /var/www/html/src/public
+    depends_on:
+      - db
+    working_dir: /var/www/html
+    command: bash -c "composer install && composer dump-autoload && ./watcher.sh & apache2-foreground"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:80 || exit 1" ]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+
+  db:
+    image: mariadb:10.5
+    container_name: movieAdmin-db
+    platform: linux/amd64
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: base
+      MYSQL_USER: user
+      MYSQL_PASSWORD: pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/baseData.sql:/docker-entrypoint-initdb.d/base.sql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+
+volumes:
+  db_data:
